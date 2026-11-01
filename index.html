@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How far is AI from you? A four-dial ruler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#EEF1F6; --surface:#FFFFFF; --ink:#16203A; --muted:#55607A; --rule:#CBD3E0;
+  --accent:#B07A1E; --accent-ink:#7A4E05; --accent-soft:#F4E7CC;
+  --warn:#A33A2C; --warn-soft:#F8E3DF; --focus:#2D5BD8;
+  --sky:#1B2547; --sky-ink:#E7EBF4; --star:#F0C56E;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top, 0px);
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0E1630; --surface:#16203F; --ink:#E7EBF4; --muted:#A2ACC3; --rule:#2B3761;
+    --accent:#E6B04E; --accent-ink:#F2C979; --accent-soft:#2F2B22;
+    --warn:#F2907F; --warn-soft:#3A2329; --focus:#8FB0FF;
+    --sky:#070C1D; --sky-ink:#E7EBF4; --star:#F2C979;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0E1630; --surface:#16203F; --ink:#E7EBF4; --muted:#A2ACC3; --rule:#2B3761;
+  --accent:#E6B04E; --accent-ink:#F2C979; --accent-soft:#2F2B22;
+  --warn:#F2907F; --warn-soft:#3A2329; --focus:#8FB0FF;
+  --sky:#070C1D; --sky-ink:#E7EBF4; --star:#F2C979;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top, 0px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size:1.0625rem; line-height:1.55;
+}
+.wrap{max-width:46rem;margin:0 auto;padding:2.25rem 1.25rem 3rem}
+h1,h2,h3,.r-num,.g-num,.big{font-family:"Newsreader", Georgia, "Times New Roman", serif}
+h1{font-weight:600;font-size:clamp(2.2rem, 6.5vw, 3.3rem);line-height:1.04;letter-spacing:-0.012em;margin:0 0 .6rem}
+h2{font-weight:600;font-size:1.8rem;line-height:1.15;margin:0 0 .2rem}
+h3{font-weight:600;font-size:1.35rem;line-height:1.2;margin:0 0 .5rem}
+p{margin:0 0 .9rem;max-width:40rem}
+.lede{color:var(--muted);font-size:1.08rem}
+.muted{color:var(--muted)}
+.kicker{font-family:"Newsreader", Georgia, serif;font-size:1.3rem;line-height:1.3;color:var(--accent-ink);margin:0 0 .8rem}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+/* Instrument */
+.panel{margin-top:1.5rem;background:var(--surface);border:1px solid var(--rule);border-radius:22px;padding:1rem}
+.sky{
+  position:relative;height:118px;border-radius:16px;overflow:hidden;background-color:var(--sky);
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(231,235,244,.55) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 34% 76%, rgba(231,235,244,.4) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 52% 18%, rgba(231,235,244,.5) 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 67% 82%, rgba(231,235,244,.35) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 81% 30%, rgba(231,235,244,.45) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 93% 68%, rgba(231,235,244,.4) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 44% 46%, rgba(231,235,244,.25) 0 1px, transparent 1.6px);
+}
+.sky-line{position:absolute;left:7%;right:5%;top:46%;border-top:1px dashed rgba(231,235,244,.35)}
+.you,.ai{position:absolute;top:46%;transform:translate(-50%,-50%);text-align:center}
+.you{left:7%}
+.you .dot{display:block;width:16px;height:16px;border-radius:50%;background:var(--sky-ink);box-shadow:0 0 0 5px rgba(231,235,244,.14)}
+.ai{left:88%;opacity:.4;transition:left .9s cubic-bezier(.2,.8,.2,1), opacity .3s ease}
+.ai .star{display:block;color:var(--star);font-size:1.7rem;line-height:1;text-shadow:0 0 12px rgba(240,197,110,.55)}
+.lbl{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:.82rem;font-weight:700;color:var(--sky-ink);white-space:nowrap}
+.readouts{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1rem .4rem .4rem}
+.r-label{display:block;font-weight:700;font-size:.95rem}
+.r-num{display:block;font-size:2.3rem;font-weight:600;line-height:1.05;font-variant-numeric:lining-nums tabular-nums}
+.r-num small{font-size:1rem;color:var(--muted);font-weight:500}
+.r-line{display:block;color:var(--muted);font-size:.95rem}
+.gauges{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:.5rem;border-top:1px solid var(--rule);margin-top:.8rem;padding-top:1rem}
+.gauge{margin:0;text-align:center}
+.gauge svg{width:100%;max-width:150px;height:auto;display:block;margin:0 auto}
+.track{fill:none;stroke:var(--rule);stroke-width:10;stroke-linecap:round}
+.value{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;opacity:0;transition:stroke-dasharray .6s ease, opacity .3s ease}
+.tick{stroke:var(--muted);stroke-width:1.5;stroke-linecap:round}
+.needle{transform-box:view-box;transform-origin:90px 90px;transform:rotate(-90deg);opacity:.25;transition:transform .7s cubic-bezier(.2,.8,.2,1), opacity .3s ease}
+.needle line{stroke:var(--ink);stroke-width:2.5;stroke-linecap:round}
+.needle circle{fill:var(--ink)}
+.g-num{display:block;font-size:1.8rem;font-weight:600;line-height:1;margin-top:-.2rem}
+.g-name{display:block;font-weight:700;font-size:.92rem;margin-top:.3rem}
+.g-band{display:block;color:var(--muted);font-size:.84rem;line-height:1.35}
+
+/* Steps */
+.steps{display:flex;flex-wrap:wrap;gap:.4rem;margin:1.6rem 0 .4rem;padding:.2rem .1rem .4rem}
+.stp{flex:none;font:inherit;font-weight:700;font-size:.92rem;border:1px solid var(--rule);background:transparent;color:var(--ink);border-radius:999px;padding:.45rem .95rem;cursor:pointer}
+.stp:hover{border-color:var(--muted)}
+.stp[aria-current="step"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.stp .tick-done{color:var(--accent-ink)}
+.stp[aria-current="step"] .tick-done{color:var(--bg)}
+.step{padding:1rem 0 .5rem}
+.step[hidden]{display:none}
+.step-nav{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-top:1.5rem;border-top:1px solid var(--rule);padding-top:1rem}
+
+.btn{font:inherit;font-weight:700;border-radius:999px;padding:.65rem 1.2rem;border:1px solid var(--ink);background:var(--ink);color:var(--bg);cursor:pointer}
+.btn.quiet{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.quiet:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[hidden]{display:none}
+.btn-row{display:flex;flex-wrap:wrap;gap:.6rem;margin:.4rem 0 1rem}
+
+input[type="text"],input[type="number"]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:.55rem .7rem}
+input::placeholder{color:var(--muted);opacity:.85}
+
+/* Tasks */
+.task{display:grid;grid-template-columns:minmax(0,1fr) 5.6rem 2.5rem;gap:.5rem;align-items:center;padding:.8rem 0;border-bottom:1px solid var(--rule)}
+.task .levels-wrap{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .6rem}
+.levels-lbl{color:var(--muted);font-size:.92rem}
+.pills{display:flex;flex-wrap:wrap;gap:.35rem}
+.pills label{position:relative;display:block}
+.pills input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.pills span{display:block;padding:.33rem .8rem;border:1px solid var(--rule);border-radius:999px;font-size:.9rem;font-weight:700}
+.pills input:checked + span{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.pills input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.icon-btn{width:2.5rem;height:2.5rem;border-radius:50%;border:1px solid var(--rule);background:transparent;color:var(--muted);font:inherit;font-size:1.25rem;line-height:1;cursor:pointer}
+.icon-btn:hover{color:var(--ink);border-color:var(--muted)}
+.weekbar{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--rule);margin-top:1.2rem;background:var(--surface)}
+.weekbar:empty{display:none}
+.wseg{position:relative;height:100%;border-right:2px solid var(--surface);min-width:4px}
+.wseg:last-child{border-right:none}
+.wfill{position:absolute;top:0;bottom:0;left:0;background:var(--accent);transition:width .5s ease}
+.tally{margin:.6rem 0 0;color:var(--muted);font-size:.98rem}
+.tally.done{color:var(--accent-ink);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.2rem 0 1rem}
+.chip-btn{font:inherit;font-size:.9rem;font-weight:700;border:1px dashed var(--muted);background:transparent;color:var(--ink);border-radius:999px;padding:.35rem .8rem;cursor:pointer}
+.chip-btn:hover{border-style:solid}
+.chip-btn[disabled]{opacity:.45;cursor:default;border-style:solid}
+.task-eg{grid-column:1 / -1;margin:-.15rem 0 0;color:var(--muted);font-size:.88rem}
+.q-text{display:block}
+.q-eg{display:block;color:var(--muted);font-size:.9rem;margin-top:.15rem}
+.personas{margin:1.4rem 0 0;padding:.9rem 1rem;border:1px dashed var(--muted);border-radius:16px;font-size:.98rem}
+.personas p{margin:0 0 .7rem}
+.example-note{margin:.9rem 0 0 !important;padding:.75rem 1rem;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;max-width:none}
+.example-note[hidden]{display:none}
+.custom-row input[type="text"]{flex:1 1 14rem;min-width:0}
+.custom-row .icon-btn{flex:none}
+.add-own{margin-top:.8rem}
+.own-hint{color:var(--muted);font-size:.92rem;margin:.9rem 0 0}
+.linkish{font:inherit;font-weight:700;background:none;border:none;padding:0;color:var(--accent-ink);text-decoration:underline;cursor:pointer}
+
+/* Questions */
+.q{display:flex;justify-content:space-between;align-items:center;gap:.6rem 1rem;padding:.8rem 0;border-bottom:1px solid var(--rule)}
+.q p{margin:0}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:999px;overflow:hidden;flex:none}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.seg span{display:block;padding:.4rem .9rem;font-weight:700;font-size:.93rem}
+.seg label + label span{border-left:1px solid var(--rule)}
+.seg input:checked + span{background:var(--ink);color:var(--bg)}
+.seg input:focus-visible + span{outline:3px solid var(--focus);outline-offset:-3px}
+.tip{margin-top:1rem;padding:.75rem 1rem;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;max-width:none}
+
+/* Reading */
+.big{font-size:1.55rem;line-height:1.3;margin:0 0 1rem;max-width:none}
+.lines{list-style:none;padding:0;margin:0 0 1rem}
+.lines li{padding:.5rem 0;border-bottom:1px solid var(--rule)}
+.lines li:last-child{border-bottom:none}
+.signal{padding:.8rem 1rem;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:0 10px 10px 0;margin:.75rem 0;max-width:none}
+.signal.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.ctx-head{font-size:1.2rem;margin:1.6rem 0 .4rem}
+.ctx-notes{margin:0;padding-left:1.2rem}
+.ctx-notes li{margin:.4rem 0}
+.year{margin-top:2rem;padding:1.3rem 1.25rem 1.1rem;border:1px dashed var(--muted);border-radius:16px}
+.year-result{font-size:1.1rem}
+details{margin-top:2rem;border-top:1px solid var(--rule);padding-top:1.2rem}
+summary{cursor:pointer;font-weight:700}
+.table-scroll{overflow-x:auto;margin-top:1rem}
+table{border-collapse:collapse;width:100%;min-width:540px;font-size:.95rem}
+th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:700}
+caption{text-align:left;font-weight:700;padding-bottom:.4rem}
+.note{color:var(--muted);font-size:.97rem;border-top:1px solid var(--rule);padding-top:1.25rem;margin-top:2rem}
+
+@media (max-width:600px){
+  .gauges{grid-template-columns:repeat(2, minmax(0,1fr));row-gap:1rem}
+  .q{flex-wrap:wrap}
+  .readouts{gap:.6rem}
+  .r-num{font-size:2rem}
+}
+@media (prefers-reduced-motion: reduce){
+  .needle,.value,.ai,.wfill{transition:none}
+}
+</style>
+</head>
+<body>
+<main class="wrap" id="top">
+  <header>
+    <h1>How far is AI from you?</h1>
+    <p class="lede">Four dials, about five minutes, which is roughly how long I lasted without AI. Your answers stay on this page and aren’t sent anywhere.</p>
+  </header>
+
+  <section class="panel" aria-label="Your instrument">
+    <div class="sky" id="sky" role="img" aria-label="Distance not measured yet">
+      <div class="sky-line"></div>
+      <div class="you"><span class="dot"></span><span class="lbl">You</span></div>
+      <div class="ai" id="ai-marker"><span class="star" aria-hidden="true">✦</span><span class="lbl">AI</span></div>
+    </div>
+    <div class="readouts">
+      <div>
+        <span class="r-label">Distance</span>
+        <span class="r-num" id="dist-num">–</span>
+        <span class="r-line" id="dist-line">Fill in Exposure and Representation to see how far AI is.</span>
+      </div>
+      <div>
+        <span class="r-label">Footing</span>
+        <span class="r-num" id="foot-num">–</span>
+        <span class="r-line" id="foot-line">Fill in Access and Purpose to see how ready you are.</span>
+      </div>
+    </div>
+    <div class="gauges" id="gauges" aria-label="Your four dials"></div>
+  </section>
+
+  <section class="personas" aria-label="Example">
+    <p><strong>See an example first?</strong> Asha is an invented office administrator at a mid-sized NGO. Load her answers to see how the dials work, then clear them and fill in your own.</p>
+    <button class="btn quiet" type="button" data-persona="asha">Load Asha’s answers</button>
+    <p class="example-note" id="example-note" hidden></p>
+  </section>
+
+  <nav class="steps" id="steps" aria-label="Steps"></nav>
+
+  <section class="step" data-step="exposure" aria-labelledby="h-exposure">
+    <h2 id="h-exposure">Exposure</h2>
+    <p class="kicker">How much of your work can AI do?</p>
+    <p>Pick the kinds of work that fill a normal week, or add your own. Give each one rough hours, then pick how much of it AI could do well enough that you’d accept the result. Be honest; nobody’s checking your timesheet.</p>
+    <div class="chips" id="task-chips" aria-label="Common kinds of work"></div>
+    <div id="tasks"></div>
+    <div class="btn-row" style="margin-top:.8rem"><button class="btn quiet" type="button" id="add-task">Add your own task</button></div>
+    <div class="weekbar" id="weekbar" aria-hidden="true"></div>
+    <p class="tally" id="tally-exposure"></p>
+  </section>
+
+  <section class="step" data-step="representation" aria-labelledby="h-representation" hidden>
+    <h2 id="h-representation">Representation</h2>
+    <p class="kicker">How well does AI know your world?</p>
+    <p>Think about the AI tools you’ve used, or could use, for your own work.</p>
+    <div id="qs-representation"></div>
+    <p class="own-hint">Something about your world we haven’t asked? Add it and answer it the same way.</p>
+    <div id="custom-representation"></div>
+    <button class="btn quiet add-own" type="button" data-own="representation">Add something of your own</button>
+    <p class="tally" id="tally-representation"></p>
+    <p class="tip">Not sure? Ask an AI tool two or three real questions from your work, in the language you actually use, and see how it does. Think of it as a mirror test.</p>
+  </section>
+
+  <section class="step" data-step="access" aria-labelledby="h-access" hidden>
+    <h2 id="h-access">Access</h2>
+    <p class="kicker">If AI changed your work tomorrow, what would you have to fall back on?</p>
+    <div id="qs-access"></div>
+    <p class="own-hint">Something else you could fall back on, or would lack? Add it and answer it the same way.</p>
+    <div id="custom-access"></div>
+    <button class="btn quiet add-own" type="button" data-own="access">Add something of your own</button>
+    <p class="tally" id="tally-access"></p>
+  </section>
+
+  <section class="step" data-step="purpose" aria-labelledby="h-purpose" hidden>
+    <h2 id="h-purpose">Purpose</h2>
+    <p class="kicker">Is AI going where you want it to, and do you get a say?</p>
+    <div id="qs-purpose"></div>
+    <p class="own-hint">Something else about having a say? Add it and answer it the same way.</p>
+    <div id="custom-purpose"></div>
+    <button class="btn quiet add-own" type="button" data-own="purpose">Add something of your own</button>
+    <p class="tally" id="tally-purpose"></p>
+  </section>
+
+  <section class="step" data-step="context" aria-labelledby="h-context" hidden>
+    <h2 id="h-context">What else shapes your distance</h2>
+    <p class="kicker">Optional, and it won’t change your scores.</p>
+    <p>Your dials show where you stand today. These questions look at the currents around you that can move them. Each answer adds a short note to your reading. Answer any that apply.</p>
+    <div id="context"></div>
+    <p class="own-hint">Something niche shaping your distance that we haven’t asked about? Add it and say which way it pushes.</p>
+    <div id="custom-context"></div>
+    <button class="btn quiet add-own" type="button" data-own="context">Add something of your own</button>
+    <p class="muted" style="font-size:.95rem;margin-top:1rem">There are no questions about your age, gender or education. Studies do find group differences in AI use, but averages describe groups, not you. The notes draw on Bick et al. (2026), NBER Working Paper 34995, and the BCG Henderson Institute (2026).</p>
+  </section>
+
+  <section class="step" data-step="reading" aria-labelledby="h-reading" hidden>
+    <h2 id="h-reading">Your reading</h2>
+    <div id="reading-body" aria-live="polite"></div>
+
+    <div class="year" aria-labelledby="h-year">
+      <h3 id="h-year">Your personal AI year</h3>
+      <p>A light-year is the distance light travels in a year. Your AI year is the distance AI travels toward you in a year. Save this reading, come back in about six months, and this space will show how much closer AI came, and whether your footing kept pace.</p>
+      <div id="year-body" aria-live="polite"></div>
+      <div class="btn-row">
+        <button class="btn" type="button" id="save" disabled>Save this reading</button>
+        <button class="btn quiet" type="button" id="delete" hidden>Delete saved readings</button>
+      </div>
+      <p class="muted" style="margin-top:.4rem;font-size:.95rem">Only your scores and the date are saved, in this browser. Your tasks and answers are never stored.</p>
+    </div>
+
+    <details>
+      <summary>How the scoring works</summary>
+      <div class="table-scroll">
+        <table>
+          <caption>The four dials</caption>
+          <thead><tr><th>Dial</th><th>What it asks</th><th>How it scores (0–10)</th></tr></thead>
+          <tbody>
+            <tr><td>Exposure</td><td>How much of your work AI can do</td><td>Each task’s hours count as None 0%, A little 25%, Half 50%, Most 75% or All 100%. The share of your week AI could do, divided by 10.</td></tr>
+            <tr><td>Representation</td><td>How well AI knows your world</td><td>Five questions plus any of your own: Yes 2, Partly 1, No 0, scaled to 10</td></tr>
+            <tr><td>Access</td><td>What you have to fall back on</td><td>Five questions plus any of your own: Yes 2, Partly 1, No 0, scaled to 10</td></tr>
+            <tr><td>Purpose</td><td>Whether you have a say in where AI goes</td><td>Five questions plus any of your own: Yes 2, Partly 1, No 0, scaled to 10</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <caption>Distance and footing</caption>
+          <thead><tr><th>Reading</th><th>Built from</th><th>What it means</th></tr></thead>
+          <tbody>
+            <tr><td>Distance</td><td>10 minus the average of Exposure and Representation</td><td>How far AI is from you. 10 is far away; 0 is right next to you.</td></tr>
+            <tr><td>Footing</td><td>The average of Access and Purpose</td><td>How ready you are. 10 is solid ground; 0 is very little.</td></tr>
+            <tr><td>Personal AI year</td><td>Change in distance between two saved readings, scaled to a year</td><td>How far AI travelled toward you in a year, shown next to how much your footing changed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:1rem">Scores of 0–3 count as low and 7–10 as high, with 4–6 in the middle. These are rough guides rather than fixed thresholds.</p>
+    </details>
+
+    <div class="btn-row" style="margin-top:1.6rem"><button class="btn quiet" type="button" id="reset">Start over</button></div>
+
+    <p class="note">Something as rudimentary and simple as these four dials is just one take on how such a measure might begin. It isn’t a finished or validated method, and it’s meant to be questioned, tested and improved.</p>
+  </section>
+
+  <div class="step-nav">
+    <button class="btn quiet" type="button" id="prev" hidden>Back</button>
+    <span></span>
+    <button class="btn" type="button" id="next">Next</button>
+  </div>
+</main>
+
+<script>
+(function(){
+  var LEVELS = [
+    {v:0, label:'None'}, {v:0.25, label:'A little'}, {v:0.5, label:'Half'}, {v:0.75, label:'Most'}, {v:1, label:'All'}
+  ];
+  var PTS = {yes:2, partly:1, no:0};
+  var DIALS = [
+    {key:'exposure', name:'Exposure',
+      low:'AI touches little of your work, for now.', mid:'AI can do some of your work.', high:'AI can already do much of your work.',
+      short:{low:'Little of your work', mid:'Some of your work', high:'Much of your work'}},
+    {key:'representation', name:'Representation',
+      low:'AI barely knows your world.', mid:'AI knows parts of your world.', high:'AI knows your world well.',
+      short:{low:'Barely knows your world', mid:'Knows parts of it', high:'Knows it well'}},
+    {key:'access', name:'Access',
+      low:'Little to fall back on if your work changes.', mid:'Some things to fall back on, with gaps.', high:'Well placed to adapt.',
+      short:{low:'Little to fall back on', mid:'Some cushion', high:'Well placed'}},
+    {key:'purpose', name:'Purpose',
+      low:'AI is happening to you, not for you.', mid:'You have some say, but not much.', high:'You have a real say in where AI goes.',
+      short:{low:'Little say', mid:'Some say', high:'A real say'}}
+  ];
+  var QSETS = {
+    representation:[
+      'Does AI work well in the language you actually use?',
+      'Does it understand the terms and rules of your field?',
+      'Does it understand your local context, like laws, calendar, currency and customs?',
+      'Can it read your records and documents, including handwritten or local formats?',
+      'Would you trust its answers about your work without double-checking?'
+    ],
+    access:[
+      'Do you have reliable internet?',
+      'Do you have an AI tool you can afford?',
+      'Do you have the skills to use it?',
+      'Do you have savings to get through a hard patch?',
+      'Do you have some protection if your work changes, from a contract, a union, your family or the government?'
+    ],
+    purpose:[
+      'Do you know what you’d want AI to do for you?',
+      'Is the AI in your work or life helping with what you actually want?',
+      'Did you choose the AI tools you use, rather than having them imposed?',
+      'Do you have a say in how AI is used where you work or live?',
+      'Could you say no to an AI tool if it didn’t suit you?'
+    ]
+  };
+  var CONTEXT = [
+    {id:'encourage', q:'Does your employer encourage you to use AI at work?', opts:[['yes','Yes'],['no','No'],['na','No employer']], notes:{
+      yes:'Your employer encourages AI use. In a large study of US and European workers, that was the strongest single predictor of whether people used AI at work.',
+      no:'Your employer doesn’t encourage AI use. In the same study, workers without encouragement were far less likely to use it, so AI may reach your work more slowly.',
+      na:'Without an employer, whether AI reaches your work is mostly up to you, which puts more weight on your Purpose dial.'}},
+    {id:'tools', q:'Does your workplace give you AI tools to use?', opts:[['yes','Yes'],['no','No'],['na','Not applicable']], notes:{
+      yes:'Your workplace provides AI tools. Providing tools predicted higher AI use, even without encouragement.',
+      no:'Your workplace doesn’t provide AI tools, so the cost and effort of using AI fall on you.'}},
+    {id:'stage', q:'Where are you in your career?', opts:[['early','Early'],['mid','Mid'],['senior','Senior']], notes:{
+      early:'Early-career roles built on structured tasks are expected to be the most exposed in the short term, and the work that remains usually asks for more judgement.',
+      senior:'Senior roles that rely on judgement, oversight and coordination are expected to be more durable, though the skills they demand are rising.'}},
+    {id:'shape', q:'Is most of your work structured and repeatable, or does it rely on judgement, trust and negotiation?', opts:[['structured','Structured'],['mixed','A mix'],['judgement','Judgement']], notes:{
+      structured:'Work made of structured, repeatable steps is more likely to be done by AI from start to finish.',
+      judgement:'Work that relies on judgement, trust and negotiation is more likely to be assisted by AI than replaced by it.'}},
+    {id:'demand', q:'If your work became cheaper or faster to do, would people want a lot more of it?', opts:[['yes','Yes'],['unsure','Unsure'],['no','No']], notes:{
+      yes:'If cheaper work means people want more of it, AI can bring more work rather than fewer jobs, as it has for software engineers so far.',
+      no:'If demand for your work is fixed, faster work tends to mean fewer people are needed to do it.'}},
+    {id:'size', q:'How many people work at your workplace?', opts:[['small','Under 10'],['medium','10 to 250'],['large','Over 250']], notes:{
+      small:'Small workplaces adopt AI more slowly. In the US, about a quarter of workers in places with fewer than ten employees used AI, against about half in the largest.',
+      large:'Large workplaces adopt AI fastest. In the US, about half of workers in places with more than 250 employees used AI.'}}
+  ];
+  var STEPS = [
+    {key:'exposure', label:'Exposure', n:1},
+    {key:'representation', label:'Representation', n:2},
+    {key:'access', label:'Access', n:3},
+    {key:'purpose', label:'Purpose', n:4},
+    {key:'context', label:'Extras'},
+    {key:'reading', label:'Your reading'}
+  ];
+  var TASK_TYPES = [
+    ['Emails and messages','replies, chats and follow-ups'],
+    ['Meetings and calls','internal meetings, client calls and coordination'],
+    ['Writing and reports','reports, proposals, minutes and letters'],
+    ['Data entry and records','spreadsheets, forms, ledgers and databases'],
+    ['Research and analysis','finding information, comparing options and summaries'],
+    ['Planning and admin','scheduling, filing, paperwork and approvals'],
+    ['Client or customer work','advice, sales, service and complaints'],
+    ['Field and hands-on work','site visits, physical tasks and travel'],
+    ['Managing people','supervising, training and reviews'],
+    ['Creative work','design, photos, video and content'],
+    ['Teaching and training','classes, workshops and coaching'],
+    ['Coding and technical work','software, systems and troubleshooting']
+  ];
+  var QEX = {
+    representation:[
+      'For example Nepali, Maithili, or the mix of languages you actually use at work.',
+      'For example accounting standards, medical terms, legal procedures or trade jargon.',
+      'For example Nepali calendar dates, local tax rules, prices in rupees, or how offices actually work.',
+      'For example handwritten ledgers, scanned forms, photos of receipts or local file formats.',
+      'For example sending its answer to a client or your boss without rechecking it.'
+    ],
+    access:[
+      'For example stable enough for a video call most days, not just patchy mobile data.',
+      'For example a free tool that does the job, or a paid one you or your employer can cover.',
+      'For example writing a clear request, checking the answer and fixing what’s wrong.',
+      'For example enough to cover a few months of expenses if your income dropped.',
+      'For example a contract, a union, a family business, social security or retraining support.'
+    ],
+    purpose:[
+      'For example “take my data entry so I can spend more time with clients.”',
+      'For example saving you time on the parts you dislike, not adding new chores.',
+      'For example tools you picked yourself, rather than a system your office rolled out.',
+      'For example being consulted on rules, targets or monitoring that involve AI.',
+      'For example keeping a task your own way without being penalised.'
+    ]
+  };
+  var OWN_HINT = {
+    representation:'e.g. Does it know my dialect, or the rules of my niche trade?',
+    access:'e.g. Do I have a side business or land to fall back on?',
+    purpose:'e.g. Does my professional body have a say in AI rules?',
+    context:'e.g. My sector is bringing in new AI rules'
+  };
+  var OWN_OPTS = {
+    dial:[['yes','Yes'],['partly','Partly'],['no','No']],
+    context:[['closer','Closer'],['further','Further'],['unsure','Unsure']]
+  };
+  var OWN_LABEL = {closer:'brings AI closer', further:'keeps AI further away', unsure:'not sure which way'};
+  var PERSONAS = {
+    asha:{name:'Asha, an office administrator',
+      tasks:[['Emails and messages',10,3],['Planning and admin',10,2],['Writing and reports',6,3],['Meetings and calls',8,1],['Managing people',6,0]],
+      representation:['yes','partly','partly','yes','partly'], access:['yes','yes','partly','partly','yes'], purpose:['yes','partly','partly','no','partly'],
+      context:{encourage:'yes', tools:'no', stage:'mid', shape:'mixed', demand:'unsure', size:'medium'},
+      custom:{representation:[{t:'Does it know our donors’ reporting formats?', v:'partly'}], access:[], purpose:[],
+              context:[{t:'A donor is piloting an AI reporting tool with us', v:'closer'}]}}
+  };
+  var KEY = 'ai-light-year-readings-v2';
+  var current = 0, justSaved = false, deleteArmed = false, deleteTimer = null, exampleMode = null;
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function newTask(){ return {t:'', h:'', lv:null, eg:''}; }
+  function fresh(){
+    return {tasks:[newTask()],
+      representation:[null,null,null,null,null], access:[null,null,null,null,null], purpose:[null,null,null,null,null],
+      context:{}, custom:{representation:[], access:[], purpose:[], context:[]}};
+  }
+  var state = fresh();
+
+  function round1(x){ return Math.round(x*10)/10; }
+  function fmt(x){ var r = round1(x); return Number.isInteger(r) ? String(r) : r.toFixed(1); }
+  function band(s){ if (typeof s !== 'number') return null; var r = Math.round(s); return r <= 3 ? 'low' : (r >= 7 ? 'high' : 'mid'); }
+  function distBand(d){ if (typeof d !== 'number') return null; var r = Math.round(d); return r <= 3 ? 'close' : (r >= 7 ? 'far' : 'reach'); }
+  var DIST_LINE = {close:'AI is close to your work.', reach:'AI is within reach.', far:'AI is still far from your work.'};
+  var FOOT_LINE = {low:'Shaky footing.', mid:'Some footing, with gaps.', high:'Solid footing.'};
+  function fmtDate(iso){
+    try { return new Date(iso).toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}); }
+    catch(e){ return String(iso).slice(0,10); }
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* Scores */
+  function computeScores(){
+    var total = 0, aiH = 0, unrated = 0;
+    state.tasks.forEach(function(r){
+      var h = parseFloat(r.h);
+      if (isFinite(h) && h > 0){
+        if (r.lv === null){ unrated++; }
+        else { total += h; aiH += h * LEVELS[r.lv].v; }
+      }
+    });
+    var sc = {exposure: total > 0 ? round1(aiH/total*10) : null, total:total, aiH:aiH, unrated:unrated};
+    ['representation','access','purpose'].forEach(function(k){
+      var a = state[k], n = a.filter(function(x){ return x !== null; }).length;
+      sc[k+'Answered'] = n;
+      var own = state.custom[k].filter(function(c){ return c.t.trim() && c.v; });
+      sc[k+'Own'] = own.length;
+      if (n === 5){
+        var pts = a.reduce(function(s, x){ return s + PTS[x]; }, 0), max = 10;
+        own.forEach(function(c){ pts += PTS[c.v]; max += 2; });
+        sc[k] = round1(pts / max * 10);
+      } else { sc[k] = null; }
+    });
+    sc.distance = (typeof sc.exposure === 'number' && typeof sc.representation === 'number') ? round1(10 - (sc.exposure + sc.representation)/2) : null;
+    sc.footing = (typeof sc.access === 'number' && typeof sc.purpose === 'number') ? round1((sc.access + sc.purpose)/2) : null;
+    return sc;
+  }
+
+  /* Gauges */
+  function gaugeSVG(key){
+    var ticks = '';
+    for (var i = 0; i <= 10; i++){
+      var a = Math.PI*(1 - i/10), r2 = (i % 5 === 0) ? 87 : 83;
+      ticks += '<line class="tick" x1="' + (90+77*Math.cos(a)).toFixed(2) + '" y1="' + (90-77*Math.sin(a)).toFixed(2) +
+               '" x2="' + (90+r2*Math.cos(a)).toFixed(2) + '" y2="' + (90-r2*Math.sin(a)).toFixed(2) + '"/>';
+    }
+    return '<svg viewBox="0 0 180 100" aria-hidden="true" focusable="false">' +
+      '<path class="track" d="M 20 90 A 70 70 0 0 1 160 90" pathLength="100"/>' +
+      '<path class="value" id="arc-' + key + '" d="M 20 90 A 70 70 0 0 1 160 90" pathLength="100" stroke-dasharray="0 100"/>' +
+      ticks + '<g class="needle" id="needle-' + key + '"><line x1="90" y1="90" x2="90" y2="36"/><circle cx="90" cy="90" r="4.5"/></g></svg>';
+  }
+  document.getElementById('gauges').innerHTML = DIALS.map(function(d){
+    return '<figure class="gauge" id="g-' + d.key + '" role="img" aria-label="' + d.name + ': not scored yet">' + gaugeSVG(d.key) +
+      '<figcaption><span class="g-num" id="num-' + d.key + '">–</span><span class="g-name">' + d.name +
+      '</span><span class="g-band" id="band-' + d.key + '">Not scored yet</span></figcaption></figure>';
+  }).join('');
+
+  function setGauge(d, s){
+    var arc = document.getElementById('arc-' + d.key), needle = document.getElementById('needle-' + d.key);
+    var num = document.getElementById('num-' + d.key), bandEl = document.getElementById('band-' + d.key), fig = document.getElementById('g-' + d.key);
+    if (typeof s === 'number'){
+      arc.setAttribute('stroke-dasharray', (s*10) + ' 100');
+      arc.style.opacity = s > 0 ? 1 : 0;
+      needle.style.transform = 'rotate(' + (-90 + s*18) + 'deg)';
+      needle.style.opacity = 1;
+      num.textContent = fmt(s);
+      bandEl.textContent = d.short[band(s)];
+      fig.setAttribute('aria-label', d.name + ': ' + fmt(s) + ' out of 10. ' + d[band(s)]);
+    } else {
+      arc.setAttribute('stroke-dasharray', '0 100'); arc.style.opacity = 0;
+      needle.style.transform = 'rotate(-90deg)'; needle.style.opacity = .25;
+      num.textContent = '–'; bandEl.textContent = 'Not scored yet';
+      fig.setAttribute('aria-label', d.name + ': not scored yet');
+    }
+  }
+
+  function updateInstrument(sc){
+    var marker = document.getElementById('ai-marker'), sky = document.getElementById('sky');
+    var dn = document.getElementById('dist-num'), dl = document.getElementById('dist-line');
+    var fn = document.getElementById('foot-num'), fl = document.getElementById('foot-line');
+    if (typeof sc.distance === 'number'){
+      marker.style.left = (16 + sc.distance/10*72) + '%';
+      marker.style.opacity = 1;
+      dn.innerHTML = fmt(sc.distance) + '<small> / 10</small>';
+      dl.textContent = DIST_LINE[distBand(sc.distance)];
+      sky.setAttribute('aria-label', 'AI is ' + fmt(sc.distance) + ' out of 10 away from you. ' + DIST_LINE[distBand(sc.distance)]);
+    } else {
+      marker.style.left = '88%'; marker.style.opacity = .4;
+      dn.textContent = '–';
+      dl.textContent = 'Fill in Exposure and Representation to see how far AI is.';
+      sky.setAttribute('aria-label', 'Distance not measured yet');
+    }
+    if (typeof sc.footing === 'number'){
+      fn.innerHTML = fmt(sc.footing) + '<small> / 10</small>';
+      fl.textContent = FOOT_LINE[band(sc.footing)];
+    } else {
+      fn.textContent = '–';
+      fl.textContent = 'Fill in Access and Purpose to see how ready you are.';
+    }
+    DIALS.forEach(function(d){ setGauge(d, sc[d.key]); });
+  }
+
+  /* Exposure */
+  var tasksEl = document.getElementById('tasks');
+  function renderTasks(){
+    tasksEl.innerHTML = '';
+    state.tasks.forEach(function(r, i){
+      var row = document.createElement('div');
+      row.className = 'task';
+      var pills = LEVELS.map(function(l, j){
+        return '<label><input type="radio" name="lv-' + i + '" value="' + j + '"' + (r.lv === j ? ' checked' : '') + '><span>' + l.label + '</span></label>';
+      }).join('');
+      row.innerHTML =
+        '<input class="task-name" type="text" placeholder="Task, e.g. writing reports" aria-label="Task ' + (i+1) + '">' +
+        '<input class="task-hours" type="number" min="0" step="0.5" inputmode="decimal" placeholder="Hours" aria-label="Hours per week for task ' + (i+1) + '">' +
+        '<button type="button" class="icon-btn" aria-label="Remove task ' + (i+1) + '">×</button>' +
+        (r.eg ? '<p class="task-eg">Includes ' + esc(r.eg) + '.</p>' : '') +
+        '<div class="levels-wrap"><span class="levels-lbl">AI could do</span><div class="pills" role="radiogroup" aria-label="How much of task ' + (i+1) + ' AI could do">' + pills + '</div></div>';
+      var name = row.querySelector('.task-name'), hours = row.querySelector('.task-hours');
+      name.value = r.t; hours.value = r.h;
+      name.addEventListener('input', function(e){ r.t = e.target.value; if (r.eg){ r.eg = ''; var egEl = row.querySelector('.task-eg'); if (egEl) egEl.remove(); } drawWeekbar(); renderChips(); });
+      hours.addEventListener('input', function(e){ r.h = e.target.value; changed(); });
+      row.querySelectorAll('.pills input').forEach(function(inp){
+        inp.addEventListener('change', function(e){ r.lv = parseInt(e.target.value, 10); changed(); });
+      });
+      row.querySelector('.icon-btn').addEventListener('click', function(){
+        if (state.tasks.length > 1){ state.tasks.splice(i, 1); } else { state.tasks[0] = newTask(); }
+        renderTasks(); changed();
+      });
+      tasksEl.appendChild(row);
+    });
+    renderChips();
+  }
+  var chipsEl = document.getElementById('task-chips');
+  function renderChips(){
+    var used = state.tasks.map(function(r){ return r.t; });
+    chipsEl.innerHTML = TASK_TYPES.map(function(tt, j){
+      var on = used.indexOf(tt[0]) !== -1;
+      return '<button type="button" class="chip-btn" data-j="' + j + '"' + (on ? ' disabled' : '') + ' title="Includes ' + tt[1] + '">' + (on ? '✓ ' : '+ ') + tt[0] + '</button>';
+    }).join('');
+    chipsEl.querySelectorAll('.chip-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var tt = TASK_TYPES[parseInt(btn.getAttribute('data-j'), 10)];
+        var blank = state.tasks.filter(function(r){ return !r.t && !r.h && r.lv === null; })[0];
+        if (blank){ blank.t = tt[0]; blank.eg = tt[1]; }
+        else { state.tasks.push({t:tt[0], h:'', lv:null, eg:tt[1]}); }
+        renderTasks(); changed();
+        var idx = state.tasks.map(function(r){ return r.t; }).indexOf(tt[0]);
+        var hrs = tasksEl.querySelectorAll('.task-hours');
+        if (hrs[idx]) hrs[idx].focus();
+      });
+    });
+  }
+  function drawWeekbar(){
+    var bar = document.getElementById('weekbar');
+    var segs = state.tasks.filter(function(r){ var h = parseFloat(r.h); return isFinite(h) && h > 0; });
+    bar.innerHTML = segs.map(function(r){
+      var w = r.lv === null ? 0 : LEVELS[r.lv].v*100;
+      return '<div class="wseg" style="flex:' + parseFloat(r.h) + '" title="' + esc(r.t || 'Task') + '"><div class="wfill" style="width:' + w + '%"></div></div>';
+    }).join('');
+  }
+  document.getElementById('add-task').addEventListener('click', function(){
+    state.tasks.push(newTask()); renderTasks();
+    var names = tasksEl.querySelectorAll('.task-name'); names[names.length-1].focus();
+  });
+
+
+  /* Question sets */
+  function renderQs(key){
+    var el = document.getElementById('qs-' + key);
+    el.innerHTML = '';
+    QSETS[key].forEach(function(text, i){
+      var row = document.createElement('div');
+      row.className = 'q'; row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', text);
+      row.innerHTML = '<p><span class="q-text">' + text + '</span><span class="q-eg">' + QEX[key][i] + '</span></p><div class="seg">' +
+        [['yes','Yes'],['partly','Partly'],['no','No']].map(function(o){
+          return '<label><input type="radio" name="' + key + '-' + i + '" value="' + o[0] + '"' + (state[key][i] === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+        }).join('') + '</div>';
+      row.querySelectorAll('input').forEach(function(inp){
+        inp.addEventListener('change', function(e){ state[key][i] = e.target.value; changed(); });
+      });
+      el.appendChild(row);
+    });
+  }
+
+  /* Your own items */
+  function renderCustom(key){
+    var el = document.getElementById('custom-' + key);
+    el.innerHTML = '';
+    var opts = key === 'context' ? OWN_OPTS.context : OWN_OPTS.dial;
+    state.custom[key].forEach(function(c, i){
+      var row = document.createElement('div');
+      row.className = 'q custom-row';
+      row.innerHTML = '<input type="text" placeholder="' + OWN_HINT[key] + '" aria-label="Your own item ' + (i+1) + '">' +
+        '<div class="seg">' + opts.map(function(o){
+          return '<label><input type="radio" name="own-' + key + '-' + i + '" value="' + o[0] + '"' + (c.v === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+        }).join('') + '</div>' +
+        '<button type="button" class="icon-btn" aria-label="Remove your own item ' + (i+1) + '">×</button>';
+      var txt = row.querySelector('input[type="text"]');
+      txt.value = c.t;
+      txt.addEventListener('input', function(e){ c.t = e.target.value; changed(); });
+      row.querySelectorAll('.seg input').forEach(function(inp){
+        inp.addEventListener('change', function(e){ c.v = e.target.value; changed(); });
+      });
+      row.querySelector('.icon-btn').addEventListener('click', function(){
+        state.custom[key].splice(i, 1); renderCustom(key); changed();
+      });
+      el.appendChild(row);
+    });
+  }
+  document.querySelectorAll('.add-own').forEach(function(b){
+    b.addEventListener('click', function(){
+      var key = b.getAttribute('data-own');
+      state.custom[key].push({t:'', v:null});
+      renderCustom(key);
+      var inputs = document.querySelectorAll('#custom-' + key + ' input[type="text"]');
+      inputs[inputs.length-1].focus();
+    });
+  });
+
+  /* Context */
+  function renderContext(){
+    var el = document.getElementById('context');
+    el.innerHTML = '';
+    CONTEXT.forEach(function(c){
+      var row = document.createElement('div');
+      row.className = 'q'; row.setAttribute('role', 'radiogroup'); row.setAttribute('aria-label', c.q);
+      row.innerHTML = '<p>' + c.q + '</p><div class="seg">' + c.opts.map(function(o){
+        return '<label><input type="radio" name="ctx-' + c.id + '" value="' + o[0] + '"' + (state.context[c.id] === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+      }).join('') + '</div>';
+      row.querySelectorAll('input').forEach(function(inp){
+        inp.addEventListener('change', function(e){ state.context[c.id] = e.target.value; changed(); });
+      });
+      el.appendChild(row);
+    });
+  }
+  function contextNotes(){
+    var notes = [];
+    CONTEXT.forEach(function(c){ var v = state.context[c.id]; if (v && c.notes[v]) notes.push(c.notes[v]); });
+    state.custom.context.forEach(function(c){
+      if (c.t.trim()) notes.push('You noted: ' + esc(c.t.trim()) + (c.v ? ' (' + OWN_LABEL[c.v] + ')' : '') + '.');
+    });
+    if (!notes.length) return '';
+    return '<h3 class="ctx-head">What else is shaping your distance</h3><ul class="ctx-notes">' +
+      notes.map(function(n){ return '<li>' + n + '</li>'; }).join('') + '</ul>';
+  }
+
+  /* Tallies */
+  function renderTallies(sc){
+    var te = document.getElementById('tally-exposure');
+    te.classList.remove('done');
+    if (sc.total > 0){
+      te.textContent = 'AI could do about ' + Math.round(sc.aiH/sc.total*100) + '% of your rated week (' + fmt(sc.aiH) + ' of ' + fmt(sc.total) + ' hours). Exposure: ' + fmt(sc.exposure) + ' of 10.' +
+        (sc.unrated ? ' ' + sc.unrated + (sc.unrated === 1 ? ' task still needs' : ' tasks still need') + ' a rating.' : '');
+      te.classList.add('done');
+    } else {
+      te.textContent = sc.unrated ? 'Now pick how much of each task AI could do.' : 'Pick a kind of work above or add your own, give it hours, then pick how much of it AI could do.';
+    }
+    ['representation','access','purpose'].forEach(function(k){
+      var t = document.getElementById('tally-' + k);
+      t.classList.remove('done');
+      if (typeof sc[k] === 'number'){
+        var d = DIALS.filter(function(x){ return x.key === k; })[0];
+        t.textContent = d.name + ': ' + fmt(sc[k]) + ' of 10' + (sc[k+'Own'] ? ', including ' + sc[k+'Own'] + ' of your own' : '') + '. ' + d[band(sc[k])];
+        t.classList.add('done');
+      } else {
+        t.textContent = sc[k+'Answered'] + ' of 5 answered.';
+      }
+    });
+  }
+
+  /* Reading */
+  function renderReading(sc){
+    var out = document.getElementById('reading-body');
+    var scored = DIALS.filter(function(d){ return typeof sc[d.key] === 'number'; });
+    if (!scored.length){
+      out.innerHTML = '<p>Your reading appears here once you’ve filled in some dials. Start with Exposure.</p>' + contextNotes();
+      return;
+    }
+    var html = '';
+    if (typeof sc.distance === 'number' && typeof sc.footing === 'number'){
+      html += '<p class="big">AI is ' + fmt(sc.distance) + ' out of 10 away from you, and your footing is ' + fmt(sc.footing) + ' out of 10.</p>';
+    } else if (typeof sc.distance === 'number'){
+      html += '<p class="big">AI is ' + fmt(sc.distance) + ' out of 10 away from you.</p><p class="muted">Fill in Access and Purpose to see your footing.</p>';
+    } else if (typeof sc.footing === 'number'){
+      html += '<p class="big">Your footing is ' + fmt(sc.footing) + ' out of 10.</p><p class="muted">Fill in Exposure and Representation to see how far AI is.</p>';
+    }
+    var bD = distBand(sc.distance), bF = band(sc.footing), sig = [];
+    if (bD && bF){
+      if (bD === 'close' && bF === 'low') sig.push(['warn', 'This is the clearest warning sign: AI is close to your work, and your footing is shaky.']);
+      else if (bD === 'close' && bF === 'high') sig.push(['', 'AI is close, and you’re well placed for it. The question is what you do with the time it frees.']);
+      else if (bD === 'close') sig.push(['', 'AI is close, and your footing is only partly there. The gap between those two is the thing to watch.']);
+      else if (bD === 'far' && bF === 'low') sig.push(['', 'AI is still far from your work, but you’d have little to fall back on when it arrives.']);
+      else if (bD === 'far' && bF === 'high') sig.push(['', 'AI is still far, and you’re well placed. Lucky you, for now.']);
+      else if (bD === 'reach' && bF === 'low') sig.push(['', 'AI is within reach and your footing is shaky. Watch which one moves first.']);
+      else sig.push(['', 'You’re somewhere in the middle. What matters now is which way it moves.']);
+    }
+    if (band(sc.representation) === 'low') sig.push(['', 'AI barely knows your world. That might keep it further away for longer, but it also means you get fewer of the benefits.']);
+    if (band(sc.purpose) === 'low') sig.push(['', 'Right now AI is happening to you more than for you.']);
+    html += sig.map(function(x){ return '<p class="signal ' + x[0] + '">' + x[1] + '</p>'; }).join('');
+    html += '<ul class="lines">' + DIALS.map(function(d){
+      var s = sc[d.key];
+      return typeof s === 'number'
+        ? '<li><strong>' + d.name + ', ' + fmt(s) + ':</strong> ' + d[band(s)] + '</li>'
+        : '<li><strong>' + d.name + ':</strong> <span class="muted">not filled in yet</span></li>';
+    }).join('') + '</ul>';
+    html += contextNotes();
+    out.innerHTML = html;
+  }
+
+  /* Saved readings and the AI year */
+  function loadReadings(){
+    try { var raw = window.localStorage.getItem(KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; }
+    catch(e){ return null; }
+  }
+  function storeReadings(arr){
+    try { window.localStorage.setItem(KEY, JSON.stringify(arr)); return true; } catch(e){ return false; }
+  }
+  function snapshot(sc){
+    return {exposure:sc.exposure, representation:sc.representation, access:sc.access, purpose:sc.purpose, distance:sc.distance, footing:sc.footing};
+  }
+  function signed(x){ var r = round1(x); return (r > 0 ? '+' : '') + fmt(r); }
+
+  function renderYear(sc){
+    var box = document.getElementById('year-body'), saveBtn = document.getElementById('save'), delBtn = document.getElementById('delete');
+    var readings = loadReadings();
+    var ready = typeof sc.distance === 'number' && typeof sc.footing === 'number';
+    if (exampleMode){
+      saveBtn.disabled = true; delBtn.hidden = true;
+      box.innerHTML = '<p class="muted">These are example answers, so they can’t be saved. Clear the example to enter your own.</p>';
+      return;
+    }
+    if (readings === null){
+      saveBtn.disabled = true; delBtn.hidden = true;
+      box.innerHTML = '<p>Saving isn’t available in this browser view, so note your distance and footing down and come back in about six months.</p>';
+      return;
+    }
+    saveBtn.disabled = !ready;
+    delBtn.hidden = readings.length === 0;
+    if (!readings.length){
+      box.innerHTML = ready ? '' : '<p class="muted">Fill in all four dials to save a reading.</p>';
+      return;
+    }
+    if (justSaved && readings.length === 1){
+      box.innerHTML = '<p class="signal">Saved your first reading, dated ' + fmtDate(readings[0].d) + '. Come back in about six months, fill in the dials again and save.</p>';
+      return;
+    }
+    var from, to, intro;
+    if (justSaved){
+      from = readings[readings.length-2]; to = readings[readings.length-1];
+      intro = 'Saved. Compared with your previous reading on ' + fmtDate(from.d) + ':';
+    } else {
+      from = readings[readings.length-1];
+      to = ready ? {d:new Date().toISOString(), s:snapshot(sc)} : null;
+      intro = 'Your last saved reading is from ' + fmtDate(from.d) + '.';
+    }
+    if (!to){
+      box.innerHTML = '<p>' + intro + ' Fill in all four dials to compare today with it.</p>';
+      return;
+    }
+    var closer = round1(from.s.distance - to.s.distance);
+    var footChange = round1(to.s.footing - from.s.footing);
+    var days = (new Date(to.d) - new Date(from.d)) / 864e5;
+    var html = '<p>' + intro + '</p>';
+    var moveText = closer > 0 ? 'AI came <strong>' + fmt(closer) + ' points closer</strong> to you'
+                 : (closer < 0 ? 'AI moved <strong>' + fmt(-closer) + ' points further</strong> from you' : 'AI stayed <strong>the same distance</strong> from you');
+    html += '<p class="year-result">' + moveText + ', and your footing changed by <strong>' + signed(footChange) + '</strong>.</p>';
+    if (days < 30){
+      html += '<p class="muted">These readings are less than a month apart, which is too close to say much. Try again in about six months.</p>';
+    } else {
+      var months = Math.max(1, Math.round(days/30.44));
+      var yr = round1(closer * 365 / days);
+      html += '<p>That was over ' + months + ' month' + (months === 1 ? '' : 's') + '. At that pace, your personal AI year is about <strong>' + fmt(Math.abs(yr)) + ' points</strong> ' + (yr >= 0 ? 'closer' : 'further') + ' a year.</p>';
+    }
+    var verdict;
+    if (closer > 0 && closer > footChange + 0.5) verdict = ['warn', 'AI is gaining on you: it came closer faster than your footing improved.'];
+    else if (closer > 0) verdict = ['', 'You’re keeping pace: your footing improved about as fast as AI came closer.'];
+    else verdict = ['', 'AI hasn’t come any closer since last time.'];
+    html += '<p class="signal ' + verdict[0] + '">' + verdict[1] + '</p>';
+    box.innerHTML = html;
+  }
+
+  document.getElementById('save').addEventListener('click', function(){
+    var sc = computeScores(), readings = loadReadings();
+    if (readings === null || typeof sc.distance !== 'number' || typeof sc.footing !== 'number') return;
+    readings.push({d:new Date().toISOString(), s:snapshot(sc)});
+    if (storeReadings(readings)) justSaved = true;
+    update();
+  });
+  document.getElementById('delete').addEventListener('click', function(e){
+    var btn = e.currentTarget;
+    if (!deleteArmed){
+      deleteArmed = true; btn.textContent = 'Click again to delete';
+      clearTimeout(deleteTimer);
+      deleteTimer = setTimeout(function(){ deleteArmed = false; btn.textContent = 'Delete saved readings'; }, 4000);
+      return;
+    }
+    clearTimeout(deleteTimer); deleteArmed = false; btn.textContent = 'Delete saved readings';
+    try { window.localStorage.removeItem(KEY); } catch(err){}
+    justSaved = false; update();
+  });
+
+  /* Steps */
+  var stepsEl = document.getElementById('steps');
+  function stepDone(key, sc){
+    if (key === 'exposure' || key === 'representation' || key === 'access' || key === 'purpose') return typeof sc[key] === 'number';
+    if (key === 'context') return Object.keys(state.context).length > 0 || state.custom.context.some(function(c){ return c.t.trim(); });
+    return false;
+  }
+  function renderSteps(sc){
+    stepsEl.innerHTML = STEPS.map(function(s, i){
+      var label = (s.n ? s.n + ' ' : '') + s.label + (stepDone(s.key, sc) ? ' <span class="tick-done" aria-label="done">✓</span>' : '');
+      return '<button type="button" class="stp" data-i="' + i + '"' + (i === current ? ' aria-current="step"' : '') + '>' + label + '</button>';
+    }).join('');
+    stepsEl.querySelectorAll('.stp').forEach(function(b){
+      b.addEventListener('click', function(){ go(parseInt(b.getAttribute('data-i'), 10)); });
+    });
+  }
+  function showStep(){
+    document.querySelectorAll('.step').forEach(function(sec){ sec.hidden = sec.getAttribute('data-step') !== STEPS[current].key; });
+    var prev = document.getElementById('prev'), next = document.getElementById('next');
+    prev.hidden = current === 0;
+    if (current < STEPS.length - 1){ next.hidden = false; next.textContent = 'Next: ' + STEPS[current+1].label; }
+    else { next.hidden = true; }
+  }
+  function go(i){
+    current = Math.max(0, Math.min(STEPS.length - 1, i));
+    showStep(); renderSteps(computeScores());
+    if (stepsEl.getBoundingClientRect().top < 0){
+      stepsEl.scrollIntoView({behavior: reduceMotion ? 'auto' : 'smooth', block:'start'});
+    }
+  }
+  document.getElementById('prev').addEventListener('click', function(){ go(current - 1); });
+  document.getElementById('next').addEventListener('click', function(){ go(current + 1); });
+
+  /* Update cycle */
+  function update(){
+    var sc = computeScores();
+    updateInstrument(sc);
+    drawWeekbar();
+    renderTallies(sc);
+    renderReading(sc);
+    renderYear(sc);
+    renderSteps(sc);
+  }
+  function changed(){ justSaved = false; update(); }
+
+  function renderAll(){
+    renderNote();
+    renderTasks();
+    renderQs('representation'); renderQs('access'); renderQs('purpose');
+    renderContext();
+    ['representation','access','purpose','context'].forEach(renderCustom);
+    showStep();
+    update();
+  }
+  function startOver(){
+    state = fresh(); justSaved = false; current = 0; exampleMode = null;
+    renderAll();
+    document.getElementById('top').scrollIntoView();
+  }
+  document.getElementById('reset').addEventListener('click', startOver);
+
+  function renderNote(){
+    var note = document.getElementById('example-note');
+    if (!exampleMode){ note.hidden = true; note.innerHTML = ''; return; }
+    note.hidden = false;
+    note.innerHTML = 'Showing invented answers for ' + PERSONAS[exampleMode].name + '. Click through the steps to see how each dial was filled in. <button type="button" class="linkish" id="clear-example">Clear the example</button>';
+    document.getElementById('clear-example').addEventListener('click', startOver);
+  }
+  function applyPersona(id){
+    var P = PERSONAS[id];
+    state = fresh();
+    state.tasks = P.tasks.map(function(t){
+      var tt = TASK_TYPES.filter(function(x){ return x[0] === t[0]; })[0];
+      return {t:t[0], h:String(t[1]), lv:t[2], eg: tt ? tt[1] : ''};
+    });
+    ['representation','access','purpose'].forEach(function(k){ state[k] = P[k].slice(); });
+    state.context = JSON.parse(JSON.stringify(P.context));
+    if (P.custom) state.custom = JSON.parse(JSON.stringify(P.custom));
+    exampleMode = id; justSaved = false;
+    renderAll();
+    go(STEPS.length - 1);
+  }
+  document.querySelectorAll('[data-persona]').forEach(function(b){
+    b.addEventListener('click', function(){ applyPersona(b.getAttribute('data-persona')); });
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
